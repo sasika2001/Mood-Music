@@ -1,60 +1,41 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from .music_recommender import MusicRecommender, MOODS, MOOD_SYNONYMS
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from typing import List
+import shutil
+from models import predict_mood
+from utils import classify_mood, add_manual_mood, all_moods
+from music_recommender import get_spotify_tracks
 
+app = FastAPI(title="Mood Music AI")
 
-class Track(BaseModel):
-    title: str
-    artist: str
-    url: Optional[str] = None
-
-
-class RecommendRequest(BaseModel):
-    mood: str = Field(
-        ...,
-        description="Mood for music recommendation",
-        examples=["happy", "sad", "relaxed", "energetic", "romantic", "chill", "motivational", "nostalgic"]
-    )
-
-
-class RecommendResponse(BaseModel):
-    mood: str
-    tracks: List[Track]
-
-
-app = FastAPI(
-    title="Music Recommender API",
-    description="API for music recommendations based on mood",
-    version="1.1.0"
-)
-
-
-@app.get("/", tags=["Root"])
-def health():
-    return {"message": "Welcome to the Music Recommender API"}
-
-
-@app.post("/recommend", response_model=RecommendResponse, tags=["Recommendations"])
-def recommend_tracks(request: RecommendRequest):
-    mood_input = request.mood.lower().strip()
-
-    # Convert synonyms to main mood
-    if mood_input in MOOD_SYNONYMS:
-        mood_input = MOOD_SYNONYMS[mood_input]
-
-    if mood_input not in MOODS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid mood '{request.mood}'. Try one of: {', '.join(MOODS)}"
-        )
-
-    recommender = MusicRecommender()
-    tracks = recommender.recommend_tracks(mood_input)
-
-    return RecommendResponse(mood=mood_input, tracks=tracks)
-
-
-@app.get("/moods", response_model=List[str], tags=["Moods"])
+@app.get("/moods")
 def get_moods():
-    return MOODS
+    """Return all available moods."""
+    return {"moods": all_moods}
+
+@app.post("/recommend/selfie")
+def recommend_by_selfie(file: UploadFile = File(...)):
+    """Recommend music based on selfie."""
+    # Save uploaded file temporarily
+    file_location = f"data/{file.filename}"
+    with open(file_location, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    # Predict mood from image
+    mood = predict_mood(file_location)
+    tracks = get_spotify_tracks(mood)
+    return {"mood": mood, "tracks": tracks}
+
+@app.post("/recommend/manual")
+def recommend_by_manual(mood: str = Form(...)):
+    """Recommend music based on manual mood input."""
+    classified_mood = classify_mood(mood)
+    if not classified_mood:
+        raise HTTPException(status_code=404, detail="Mood not recognized. Use /add_mood to add it manually.")
+    tracks = get_spotify_tracks(classified_mood)
+    return {"mood": classified_mood, "tracks": tracks}
+
+@app.post("/add_mood")
+def add_mood_endpoint(mood: str = Form(...), synonyms: List[str] = Form([])):
+    """Add a new manual mood."""
+    updated_moods = add_manual_mood(mood, synonyms)
+    return {"message": f"Mood '{mood}' added successfully!", "all_moods": updated_moods}
