@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mood Music AI</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #20c997, #ff6b6b);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 15px;
+      font-size: 2rem;
+      color: #20c997;
+    }
+
+    h3 {
+      margin: 15px 0 10px;
+      font-size: 1.2rem;
+      color: #ff6b6b;
+    }
+
+    select, input[type="text"], input[type="file"] {
+      padding: 10px;
+      width: 90%;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #20c997;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #17a589;
+      transform: scale(1.05);
+    }
+
+    .preview img {
+      margin-top: 10px;
+      width: 100px;
+      height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 2px solid #20c997;
+    }
+
+    .mood-result {
+      margin: 15px 0;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .track {
+      background: #f8f9fa;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      text-align: left;
+      border-left: 5px solid #20c997;
+    }
+
+    .track strong {
+      font-size: 1.1rem;
+      color: #ff6b6b;
+    }
+
+    .track a {
+      color: #20c997;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .track a:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎶 Mood Music AI</h1>
+
+    <!-- Step 1: Method Selection -->
+    <h3>Choose Method</h3>
+    <select id="methodSelect">
+      <option value="" disabled selected>Select a method</option>
+      <option value="manual">Manual Mood Input</option>
+      <option value="selfie">Auto Analyze (Selfie)</option>
+    </select>
+
+    <!-- Manual Mood Input -->
+    <div id="manualSection" class="hidden">
+      <h3>Enter Your Mood</h3>
+      <form id="manualForm">
+        <input type="text" id="moodInput" placeholder="e.g., happy, sad, calm" required>
+        <br>
+        <button type="submit">Get Tracks</button>
+      </form>
+    </div>
+
+    <!-- Selfie Upload -->
+    <div id="selfieSection" class="hidden">
+      <h3>Upload a Selfie</h3>
+      <form id="selfieForm" enctype="multipart/form-data">
+        <input type="file" id="selfieInput" accept="image/*" required>
+        <div class="preview" id="preview"></div>
+        <button type="submit">Analyze Mood</button>
+      </form>
+    </div>
+
+    <!-- Mood Result -->
+    <div class="mood-result" id="moodResult"></div>
+
+    <!-- Recommended Tracks -->
+    <h3>Recommended Tracks</h3>
+    <div id="tracks">🎧 Your music will appear here...</div>
+  </div>
+
+  <script>
+    const methodSelect = document.getElementById('methodSelect');
+    const manualSection = document.getElementById('manualSection');
+    const selfieSection = document.getElementById('selfieSection');
+    const tracksDiv = document.getElementById('tracks');
+    const previewDiv = document.getElementById('preview');
+    const moodResult = document.getElementById('moodResult');
+
+    // Show section based on method
+    methodSelect.addEventListener('change', () => {
+      if (methodSelect.value === "manual") {
+        manualSection.classList.remove("hidden");
+        selfieSection.classList.add("hidden");
+      } else if (methodSelect.value === "selfie") {
+        selfieSection.classList.remove("hidden");
+        manualSection.classList.add("hidden");
+      }
+      moodResult.innerHTML = "";
+      tracksDiv.innerHTML = "🎧 Your music will appear here...";
+    });
+
+    // Preview uploaded selfie
+    document.getElementById('selfieInput').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewDiv.innerHTML = `<img src="${e.target.result}" alt="Selfie Preview">`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Manual mood form
+    document.getElementById('manualForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      tracksDiv.innerHTML = "🎧 Finding tracks...";
+      moodResult.innerHTML = "";
+      const mood = document.getElementById('moodInput').value;
+
+      try {
+        const response = await fetch('http://127.0.0.1:8000/recommend/manual', {
+          method: 'POST',
+          body: new URLSearchParams({ mood })
+        });
+        const data = await response.json();
+        if (data.mood) {
+          moodResult.innerHTML = `😊 Detected Mood: <span style="color:#ff6b6b">${data.mood}</span>`;
+        }
+        displayTracks(data);
+      } catch (err) {
+        tracksDiv.innerHTML = "⚠️ Error connecting to backend.";
+      }
+    });
+
+    // Selfie upload form
+    document.getElementById('selfieForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      tracksDiv.innerHTML = "🎧 Analyzing selfie...";
+      moodResult.innerHTML = "";
+      const fileInput = document.getElementById('selfieInput');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const response = await fetch('http://127.0.0.1:8000/recommend/selfie', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        if (data.mood) {
+          moodResult.innerHTML = `😊 Detected Mood: <span style="color:#ff6b6b">${data.mood}</span>`;
+        }
+        displayTracks(data);
+      } catch (err) {
+        tracksDiv.innerHTML = "⚠️ Error connecting to backend.";
+      }
+    });
+
+    // Display recommended tracks
+    function displayTracks(data) {
+      if (data.tracks) {
+        tracksDiv.innerHTML = '';
+        data.tracks.forEach(track => {
+          const div = document.createElement('div');
+          div.className = 'track';
+          div.innerHTML = `<strong>${track.name}</strong><br>
+                           <span>by ${track.artist}</span><br>
+                           <a href="${track.url}" target="_blank">▶ Play on Spotify</a>`;
+          tracksDiv.appendChild(div);
+        });
+      } else {
+        tracksDiv.innerHTML = data.error || "❌ No tracks found.";
+      }
+    }
+  </script>
+</body>
+</html>

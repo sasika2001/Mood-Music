@@ -27,6 +27,14 @@ train_generator = train_datagen.flow_from_directory(
     class_mode='categorical'
 )
 
+import json
+
+print("Class indices:", train_generator.class_indices)
+
+with open('data/class_indices.json', 'w') as f:
+    json.dump(train_generator.class_indices, f)
+print("Saved class indices to data/class_indices.json")
+
 # Load validation images
 validation_generator = val_datagen.flow_from_directory(
     val_dir,

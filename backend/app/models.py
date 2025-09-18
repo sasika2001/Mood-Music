@@ -1,12 +1,17 @@
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
+import json
 
 # Load the trained model
 model = load_model('data/facial_mood_model.h5')
 
-# Moods (must match dataset folder names)
-MOODS = ["angry","disgust","fear","happy","neutral","sad","surprise"]
+# Load class indices mapping
+with open("data/class_indices.json", "r") as f:
+    class_indices = json.load(f)
+
+# Reverse it: { "angry": 0 } -> { 0: "angry" }
+idx_to_class = {v: k for k, v in class_indices.items()}
 
 def predict_mood(img_path: str) -> str:
     """Predict mood from a selfie image."""
@@ -16,4 +21,6 @@ def predict_mood(img_path: str) -> str:
     
     preds = model.predict(img_array)
     mood_index = np.argmax(preds)
-    return MOODS[mood_index]
+    predicted_mood = idx_to_class[mood_index]   # ✅ Correct mapping
+    
+    return predicted_mood
