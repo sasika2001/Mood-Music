@@ -21,6 +21,6 @@ def predict_mood(img_path: str) -> str:
     
     preds = model.predict(img_array)
     mood_index = np.argmax(preds)
-    predicted_mood = idx_to_class[mood_index]   # ✅ Correct mapping
+    predicted_mood = idx_to_class[mood_index]  
     
     return predicted_mood

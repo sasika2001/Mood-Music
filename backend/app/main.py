@@ -1,34 +1,49 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import shutil
+import os
 
 from models import predict_mood
 from utils import classify_mood, add_manual_mood, all_moods
 from music_recommender import get_spotify_tracks
 
-from fastapi.middleware.cors import CORSMiddleware
-
 # Create FastAPI app
 app = FastAPI(title="Mood Music AI")
 
-# Mount the frontend folder correctly (adjust path from backend/app to frontend)
-app.mount("/frontend", StaticFiles(directory="../../frontend", html=True), name="frontend")
+# Mount the frontend folder
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend"))
+app.mount("/frontend", StaticFiles(directory=frontend_path, html=True), name="frontend")
+
+# --------------------
+# CORS
+# --------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or restrict to your frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --------------------
 # ROUTES
 # --------------------
 
 @app.get("/moods")
-def get_moods():
+async def get_moods():
     """Return all available moods."""
     return {"moods": all_moods}
 
 @app.post("/recommend/selfie")
-def recommend_by_selfie(file: UploadFile = File(...)):
-    """Recommend music based on selfie."""
+async def recommend_by_selfie(file: UploadFile = File(...)):
+    """Recommend music based on selfie upload."""
     # Save uploaded file temporarily
-    file_location = f"data/{file.filename}"
+    data_dir = os.path.join(os.path.dirname(__file__), "data")
+    os.makedirs(data_dir, exist_ok=True)
+    file_location = os.path.join(data_dir, file.filename)
+
     with open(file_location, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
@@ -38,7 +53,7 @@ def recommend_by_selfie(file: UploadFile = File(...)):
     return {"mood": mood, "tracks": tracks}
 
 @app.post("/recommend/manual")
-def recommend_by_manual(mood: str = Form(...)):
+async def recommend_by_manual(mood: str = Form(...)):
     """Recommend music based on manual mood input."""
     classified_mood = classify_mood(mood)
     if not classified_mood:
@@ -50,15 +65,7 @@ def recommend_by_manual(mood: str = Form(...)):
     return {"mood": classified_mood, "tracks": tracks}
 
 @app.post("/add_mood")
-def add_mood_endpoint(mood: str = Form(...), synonyms: List[str] = Form([])):
+async def add_mood_endpoint(mood: str = Form(...), synonyms: List[str] = Form([])):
     """Add a new manual mood."""
     updated_moods = add_manual_mood(mood, synonyms)
     return {"message": f"Mood '{mood}' added successfully!", "all_moods": updated_moods}
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Or specify "http://127.0.0.1:5500" if using Live Server
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
