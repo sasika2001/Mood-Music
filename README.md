@@ -2,12 +2,12 @@
 
 <h2>🩵 Project Overview</h2>
 <p>The <strong>Mood-Based Music Recommendation System</strong> recommends songs based on the user’s mood.  
-It takes input as a user-selected mood or a facial expression image, processes it through a machine learning model, and returns a personalized playlist or song suggestions.</p>
+It takes input as a user-selected mood or a facial expression image, processes it through a machine learning model, and returns a personalized playlist or song suggestions.  
+Recommended songs are played directly in <strong>Spotify</strong> using the Spotify Web API.</p>
 
 <blockquote>
 💡 <em>Example:</em><br>
-If the user is feeling <strong>happy</strong>, the system may recommend upbeat songs.  
-If the user is <strong>sad</strong>, it may suggest calming or soothing music.
+If the user is feeling <strong>happy</strong>, the system may recommend upbeat songs and automatically play them on Spotify.
 </blockquote>
 
 <h2>🎯 Key Features</h2>
@@ -15,6 +15,7 @@ If the user is <strong>sad</strong>, it may suggest calming or soothing music.
   <li>✅ Detects user mood from facial expression images or manual selection</li>
   <li>✅ Uses ML/Deep Learning for mood classification</li>
   <li>✅ Provides personalized music recommendations</li>
+  <li>✅ Plays recommended songs directly in <strong>Spotify</strong> via Spotify Web API</li>
   <li>✅ Backend implemented with FastAPI</li>
   <li>✅ Simple and user-friendly frontend with HTML</li>
   <li>✅ Easily extendable for new moods or music datasets</li>
@@ -33,6 +34,7 @@ If the user is <strong>sad</strong>, it may suggest calming or soothing music.
       <li>Preprocessing using <code>preprocess_image.py</code></li>
       <li>Mood prediction using trained model (<code>train_model.py</code>)</li>
       <li>Music recommendation using <code>music_recommender.py</code></li>
+      <li>Play songs directly in <strong>Spotify</strong> using Spotify API</li>
     </ul>
   </li>
   <li>Response sent to frontend:
@@ -51,6 +53,7 @@ If the user is <strong>sad</strong>, it may suggest calming or soothing music.
 <tr><td>Deep Learning / ML</td><td>TensorFlow, Keras, scikit-learn</td></tr>
 <tr><td>Image Processing</td><td>OpenCV, PIL</td></tr>
 <tr><td>Data Handling</td><td>NumPy, Pandas</td></tr>
+<tr><td>Spotify Integration</td><td>Spotipy / Spotify Web API</td></tr>
 <tr><td>Utilities</td><td>utils.py for helper functions</td></tr>
 <tr><td>IDE</td><td>VS Code</td></tr>
 </table>
@@ -103,8 +106,16 @@ Navigate to the project folder:</p>
 <pre><code>pip install -r requirements.txt
 </code></pre>
 <p>If not, install manually:</p>
-<pre><code>pip install fastapi uvicorn tensorflow opencv-python numpy pandas
+<pre><code>pip install fastapi uvicorn tensorflow opencv-python numpy pandas spotipy
 </code></pre>
+
+<h3>6️⃣ Spotify API Setup</h3>
+<p>To play songs in Spotify, you need a <a href="https://developer.spotify.com/dashboard/">Spotify Developer Account</a> and a Client ID & Client Secret.  
+Store them in a <code>.env</code> file in the backend folder:</p>
+<pre><code>SPOTIFY_CLIENT_ID=your_client_id
+SPOTIFY_CLIENT_SECRET=your_client_secret
+</code></pre>
+<p>The backend uses these credentials to authenticate and play songs via the Spotify Web API.</p>
 
 ---
 
@@ -121,6 +132,7 @@ uvicorn app.main:app --reload
 <ul>
   <li>Send user mood selection or uploaded image</li>
   <li>Receive recommended music</li>
+  <li>Play songs directly in <strong>Spotify</strong></li>
   <li>Display songs on the page</li>
 </ul>
 
@@ -134,9 +146,9 @@ uvicorn app.main:app --reload
   <li>Detected mood: <strong>Happy</strong></li>
   <li>Recommended songs:</li>
   <ul>
-    <li>"Happy" by Pharrell Williams</li>
-    <li>"Can't Stop the Feeling!" by Justin Timberlake</li>
-    <li>"Good Feeling" by Flo Rida</li>
+    <li>"Happy" by Pharrell Williams — <em>played in Spotify</em></li>
+    <li>"Can't Stop the Feeling!" by Justin Timberlake — <em>played in Spotify</em></li>
+    <li>"Good Feeling" by Flo Rida — <em>played in Spotify</em></li>
   </ul>
 </ul>
 
